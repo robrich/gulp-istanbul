@@ -32,33 +32,24 @@ var plugin  = module.exports = function () {
 };
 
 plugin.writeReports = function (opts) {
-  if (arguments.length === 1 && typeof(arguments[0]) === 'string' ) {
-    opts = { dir: opts };
-  } else if (!opts) {
-    opts = {};
-  }
-  if (!opts.dir) {
-    opts.dir = path.join(process.cwd(), "coverage"); 
-  }
-  if (!opts.reporters) { 
-    opts.reporters = [ "lcov", "json", "text", "text-summary" ]; 
-  }
-  if (!opts.reportOpts) {
-    opts.reportOpts = { dir: opts.dir };
-  }
+  if (!opts) opts = {};
+  if (typeof opts === 'string') opts = { dir: opts };
+  if (!opts.dir) opts.dir = path.join(process.cwd(), "coverage");
+  if (!opts.reporters) opts.reporters = [ "lcov", "json", "text", "text-summary" ];
+  if (!opts.reportOpts) opts.reportOpts = { dir: opts.dir };
+
+  var reporters = opts.reporters.map(function (type) {
+    return Report.create(type, opts.reportOpts);
+  });
 
   var cover = through();
 
   cover.on('end', function() {
 
     var collector = new Collector();
-
     collector.add(global.__coverage__);
-
-
-    opts.reporters.forEach(function (type) { 
-      var report = Report.create(type, opts.reportOpts)
-      report.writeReport(collector, true); 
+    reporters.forEach(function (report) {
+      report.writeReport(collector, true);
     });
 
   }).resume();
